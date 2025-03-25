@@ -10,6 +10,7 @@ const asyncHandler = (fn) => (req, res, next) => {
         });
 };
 
+
 /*
 const asyncHandler=(fn)=> async(req,res,next)=>{
    try{
