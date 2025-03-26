@@ -1,6 +1,6 @@
 import {asyncHandler} from "../utils/asynchandler.js";
 import { User } from "../models/userModel.js";
-import uploadImageOnCloudinar from '../utils/cloudinary.js';
+import uploadImageOnCloudinary from '../utils/cloudinary.js';
 
 const registerUser = asyncHandler(async (req, res) => {
     const { username, email, fullName, password } = req.body;
