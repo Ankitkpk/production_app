@@ -1,8 +1,25 @@
 import {asyncHandler} from "../utils/asynchandler.js";
 import { User } from "../models/userModel.js";
 import uploadImageOnCloudinary from '../utils/cloudinary.js';
+import jwt from "jsonwebtoken";
 
-const registerUser = asyncHandler(async (req, res) => {
+const generateAccessTokenRefereshToken = async(userId)=>{
+    try{
+     const user = await User.findById({userId});
+     const  AccessToken=user.generateAccessToken();
+     const  RefereshToken=user.generateRefreshToken();
+     user.refreshToken=RefereshToken;
+     //this will save documents even if the password is missing// 
+     await user.save({ validateBeforeSave: false });
+     return { AccessToken , RefereshToken}
+    }catch(error)
+    {
+        return res.status(500).json({ message: "error generating access and refresh token" });
+    }
+}
+  
+
+const registerUser = async (req, res) => {
     try {
         const { username, email, fullName, password } = req.body;
 
@@ -61,18 +78,68 @@ const registerUser = asyncHandler(async (req, res) => {
         console.error("Error registering user:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
-});
+};
 
-const loginUser=asyncHandler(async (req, res) => {
-    const {email, username, password}=req.body;
 
-    if(!username || !email){
-        return res.status(400).json({ message: "email and password required" });   
+
+const loginUser = async (req, res) => {
+    try {
+      const { email, username, password } = req.body;
+  
+      // Check if email or username is missing
+      if (!username && !email) {
+        return res.status(400).json({ message: "Email or username is required" });
+      }
+  
+      // Find user by username or email
+      const userExist = await User.findOne({ $or: [{ username }, { email }] });
+  
+      if (!userExist) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      // Validate password
+      const isPasswordCorrect = await userExist.isPasswordCorrect(password);
+      if (!isPasswordCorrect) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+  
+      // Generate access token & refresh token
+      const { accessToken, refreshToken } = await generateAccessTokenRefereshToken(userExist._id);
+  
+      // Store refresh token in database (optional)
+      userExist.refreshToken = refreshToken;
+      await userExist.save();
+  
+    
+      const cookieOptions = {
+        httpOnly: true, // Prevents JavaScript access
+        secure:true,
+        sameSite: "Strict", // Prevents CSRF
+      };
+  
+      // Set cookies
+      res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); 
+      res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 })
+  
+      // Get user details excluding sensitive data
+      const loggedInUser = await User.findById(userExist._id).select("-password -refreshToken");
+  
+      return res.status(200).json({
+        message: "Login successful",
+        user: loggedInUser,
+        accessToken, 
+        refreshToken
+      });
+  
+    } catch (error) {
+      console.error("Error logging in user:", error);
+      return res.status(500).json({ message: "Internal server error" });
     }
-   const userExist = await User.findOne({ $or: [{ username }, { email }]});
-   if(!userExist){
-    return res.status(400).json({ message: "cannot find user with thses email and password" });
-   }
+  };
+  
+
+    
 //take email and password from req.body//
 //get the user based on email//
 //compare password between them//
@@ -80,7 +147,6 @@ const loginUser=asyncHandler(async (req, res) => {
 //give the access//
 //store in cookie//
  
-})
 
 
 
