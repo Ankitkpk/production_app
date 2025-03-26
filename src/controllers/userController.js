@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 
 const generateAccessTokenRefereshToken = async(userId)=>{
     try{
-     const user = await User.findById({userId});
+     const user = await User.findById(userId);
      const  AccessToken=user.generateAccessToken();
      const  RefereshToken=user.generateRefreshToken();
      user.refreshToken=RefereshToken;
@@ -107,20 +107,20 @@ const loginUser = async (req, res) => {
       // Generate access token & refresh token
       const { accessToken, refreshToken } = await generateAccessTokenRefereshToken(userExist._id);
   
-      // Store refresh token in database (optional)
+    
       userExist.refreshToken = refreshToken;
       await userExist.save();
   
     
       const cookieOptions = {
-        httpOnly: true, // Prevents JavaScript access
+        httpOnly: true,
         secure:true,
-        sameSite: "Strict", // Prevents CSRF
+        sameSite: "Strict", 
       };
   
       // Set cookies
-      res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); 
-      res.cookie("refreshToken", refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 })
+      res.cookie("accessToken", accessToken,cookieOptions); 
+      res.cookie("refreshToken", refreshToken,cookieOptions)
   
       // Get user details excluding sensitive data
       const loggedInUser = await User.findById(userExist._id).select("-password -refreshToken");
@@ -129,7 +129,7 @@ const loginUser = async (req, res) => {
         message: "Login successful",
         user: loggedInUser,
         accessToken, 
-        refreshToken
+        refreshToken,
       });
   
     } catch (error) {
@@ -139,7 +139,28 @@ const loginUser = async (req, res) => {
   };
   
 
-    
+  const logoutUser = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // Remove refresh token from the database
+        await User.findByIdAndUpdate(
+            userId, 
+            { $set: { refreshToken: undefined } }, 
+            { new: true }
+          );
+
+        // Clear cookies for refresh token and access token
+        res.clearCookie("refreshToken", { httpOnly: true, secure: true, sameSite: "None" });
+        res.clearCookie("accessToken", { httpOnly: true, secure: true, sameSite: "None" });
+
+        res.status(200).json({ message: "Logout successful" });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+};
+
+
 //take email and password from req.body//
 //get the user based on email//
 //compare password between them//
@@ -150,4 +171,4 @@ const loginUser = async (req, res) => {
 
 
 
-export {registerUser,loginUser}
+export {registerUser,loginUser,logoutUser}
