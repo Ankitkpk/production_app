@@ -12,7 +12,7 @@ const subscriptionSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true } // Automatically adds createdAt and updatedAt fields
+  { timestamps: true } 
 );
 
 export const Subscription = mongoose.model("Subscription", subscriptionSchema);

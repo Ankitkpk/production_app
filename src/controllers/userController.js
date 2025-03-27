@@ -270,8 +270,75 @@ const updateAvatar = async (req, res) => {
   }
 };
 
+const getChannelProfile=async(req,res)=>{
+   try{
+   const {username}=req.params;
+   if(!username){
+
+   }
+   //aggregation function always return arrays//
+   const channel = await User.aggregate([
+    {
+      $match: {
+        username: username.toLowerCase()
+      }
+    },
+    {
+      $lookup: {
+        from: "subscriptions", 
+        localField: "_id",
+        foreignField: "subscriber", 
+        as: "Subscribers"
+      }
+    },{
+      $lookup: {
+        from: "subscriptions", 
+        localField: "_id",
+        foreignField: "channel", 
+        as: "channelsubscribed"
+      }
+    },
+    {
+      //count
+      $addFields: {
+        subscriberscount: {
+          $size:"$Subscribers"
+        },
+        channelsubscribedcount:{
+         $size:"$channelsubscribed"
+        },
+        //boolean field to check if its issubscribed  or not //
+        isSusbcribed:{
+          $cond:{
+             if:{$in:[req.user?._id , "$Subscribers.subscriber"]},
+             then:true,
+             else:false
+
+          }
+        }
+      }
+    },{
+       $project:{
+        fullName:1,
+        avatar:1,
+        coverImage:1,
+        subscriberscount:1,
+        channelsubscribedcount:1,
+        isSusbcribed
+       }
+    }
+  ]);
+  if (!channel.length) {
+    return res.status(404).json({ error: "Channel not found" });
+  }
+  res.status(200).json(channel[0]);
+   }catch(error)
+   {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+   }
+}
 
 
 
-
-export {registerUser,loginUser,logoutUser,verifyRefreshToken,changeCurrentPassword,getCurrentUser,updateAvatar}
+export {registerUser,loginUser,logoutUser,verifyRefreshToken,changeCurrentPassword,getCurrentUser,updateAvatar,getChannelProfile}
