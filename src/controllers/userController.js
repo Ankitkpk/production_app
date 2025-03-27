@@ -150,7 +150,7 @@ const loginUser = async (req, res) => {
             { new: true }
           );
 
-        // Clear cookies for refresh token and access token
+        // Clear cookies for refresh token and accesstoken
         res.clearCookie("refreshToken", { httpOnly: true, secure: true, sameSite: "None" });
         res.clearCookie("accessToken", { httpOnly: true, secure: true, sameSite: "None" });
 
@@ -161,14 +161,56 @@ const loginUser = async (req, res) => {
 };
 
 
-//take email and password from req.body//
-//get the user based on email//
-//compare password between them//
-//verify the token//
-//give the access//
-//store in cookie//
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const { generateAccessTokenRefereshToken } = require("../utils/tokenUtils");
+
+const verifyRefreshToken = async (req, res, next) => {
+  try {
+    // Extract refresh token from cookies or request body
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!incomingRefreshToken) {
+      return res.status(401).json({ message: "Unauthorized: No token provided" });
+    }
+
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    // Find user in the database
+    const user = await User.findById(decodedToken._id).select("-password");
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    // Ensure the stored refresh token matches the provided one
+    if (user.refreshToken !== incomingRefreshToken) {
+      return res.status(401).json({ message: "Refresh token does not match" });
+    }
+
+    const { accessToken, newrefreshToken } = await generateAccessTokenRefereshToken(user._id);
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+    };
+
+    res
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", newrefreshToken, cookieOptions)
+      .status(200)
+      .json({ message: "Tokens refreshed successfully" });
+
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
+
+
  
 
 
 
-export {registerUser,loginUser,logoutUser}
+export {registerUser,loginUser,logoutUser,verifyRefreshToken}

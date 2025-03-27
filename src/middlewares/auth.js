@@ -8,7 +8,7 @@ export const verifyJWT = async (req, res, next) => {
             return res.status(401).json({ message: "Unauthorized: No token provided" });
         }
 
-      const decodedToken =jwt.verify(token, process.env.JWT_SECRET);
+      const decodedToken =jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
           const user= await User.findOne(decodedToken._id).select("-password -refreshToken");
           if(!user){
             return res.status(401).json({ message: "invalid access token" });
