@@ -207,10 +207,47 @@ const verifyRefreshToken = async (req, res, next) => {
   }
 };
 
+const changeCurrentPassword = async (req, res) => {
+  try {
+    const { oldpassword, newpassword } = req.body;
 
+    // Find user
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if old password is correct
+    const isPasswordCorrect = await user.isPasswordCorrect(oldpassword);
+    if (!isPasswordCorrect) {
+      return res.status(401).json({ message: "Invalid old password" });
+    }
+
+    user.password = newpassword;
+    await user.save();
+
+    return res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
+const getCurrentUser = async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.user._id).select("-password");
+
+    if (!currentUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json(currentUser);
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
 
  
 
 
 
-export {registerUser,loginUser,logoutUser,verifyRefreshToken}
+export {registerUser,loginUser,logoutUser,verifyRefreshToken,changeCurrentPassword}
