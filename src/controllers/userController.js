@@ -160,7 +160,6 @@ const logoutUser = async (req, res) => {
     }
 };
 
-const { generateAccessTokenRefereshToken } = require("../utils/tokenUtils");
 
 const verifyRefreshToken = async (req, res, next) => {
   try {
@@ -245,7 +244,7 @@ const getCurrentUser = async (req, res) => {
 
 const updateAvatar = async (req, res) => {
   try {
-    const avatarLocalPath = req.files?.avatar?.[0]?.path;
+    const avatarLocalPath = req.file?.path;
 
     if (!avatarLocalPath) {
       return res.status(400).json({ message: "No avatar file provided" });
