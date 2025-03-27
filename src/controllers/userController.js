@@ -139,7 +139,7 @@ const loginUser = async (req, res) => {
   };
   
 
-  const logoutUser = async (req, res) => {
+const logoutUser = async (req, res) => {
     try {
         const userId = req.user._id;
 
@@ -160,9 +160,6 @@ const loginUser = async (req, res) => {
     }
 };
 
-
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
 const { generateAccessTokenRefereshToken } = require("../utils/tokenUtils");
 
 const verifyRefreshToken = async (req, res, next) => {
@@ -224,7 +221,7 @@ const changeCurrentPassword = async (req, res) => {
     }
 
     user.password = newpassword;
-    await user.save();
+    await user.save({ validateBeforeSave: false });
 
     return res.status(200).json({ message: "Password updated successfully" });
   } catch (error) {
@@ -246,8 +243,36 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
- 
+const updateAvatar = async (req, res) => {
+  try {
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
+
+    if (!avatarLocalPath) {
+      return res.status(400).json({ message: "No avatar file provided" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const uploadedAvatar = await uploadImageOnCloudinary(avatarLocalPath);
+
+    // Ensure Cloudinary response is valid
+    if (!uploadedAvatar || !uploadedAvatar.secure_url) {
+      return res.status(500).json({ message: "Failed to upload avatar" });
+    }
+
+    user.avatar = uploadedAvatar.secure_url;
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json({ message: "Avatar updated successfully", avatar: user.avatar });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
 
 
 
-export {registerUser,loginUser,logoutUser,verifyRefreshToken,changeCurrentPassword}
+
+
+export {registerUser,loginUser,logoutUser,verifyRefreshToken,changeCurrentPassword,getCurrentUser,updateAvatar}
