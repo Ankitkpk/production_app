@@ -2,14 +2,12 @@ import uploadImageOnCloudinary from '../utils/cloudinary.js';
 
 const createVideo = async (req, res) => {
     try {
-      const { title, description, duration, owner } = req.body;
+      const { title, description, owner } = req.body;
   
       if ([title, description, owner].some((field) =>field.trim() === "")) {
         return res.status(400).json({ message: "All fields are required" });
       }
-      if (!duration || isNaN(duration)) {
-        return res.status(400).json({ message: "Duration must be a valid number" });
-      }
+     
   
       // File upload validation
       const videoFile = req.files?.videoFile?.[0]?.path;
@@ -34,7 +32,7 @@ const createVideo = async (req, res) => {
       const newVideo = new Video({
         title,
         description,
-        duration,
+        duration:videoFile?.duration || null,
         videoFile: uploadedVideoFile.secure_url,
         thumbnail: uploadedThumbnail.secure_url,
         owner,
