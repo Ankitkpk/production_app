@@ -1,6 +1,6 @@
 import uploadImageOnCloudinary from '../utils/cloudinary.js';
 
-const createVideo = async (req, res) => {
+const publishedVideo = async (req, res) => {
     try {
       const { title, description, owner } = req.body;
   
@@ -36,7 +36,7 @@ const createVideo = async (req, res) => {
         videoFile: uploadedVideoFile.secure_url,
         thumbnail: uploadedThumbnail.secure_url,
         owner,
-        isPublished: false,
+        isPublished:true,
       });
   
       await newVideo.save();
@@ -69,4 +69,4 @@ const vidoePublished=async(req,res)=>{
     }
 }
 
-export{createVideo}
+export{publishedVideo}

@@ -6,11 +6,11 @@ import {upload} from '../middlewares/multer.js';
 
 const router = express.Router();  
 router.post(
-    "/createVideo",
+    "/publishedVideo",
      upload.fields([
         { name: "videoFile", maxCount: 1 },
         { name: "thumbnail", maxCount: 1 }
     ]), 
-    createVideo
+    publishedVideo
 );
 export default router;
