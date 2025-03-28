@@ -3,9 +3,8 @@ import { loginUser, logoutUser, registerUser,verifyRefreshToken,changeCurrentPas
 import {upload} from '../middlewares/multer.js'; 
 import { verifyJWT } from '../middlewares/auth.js';
 
+
 const router = express.Router();  
-
-
 router.post(
     "/register",
      upload.fields([
