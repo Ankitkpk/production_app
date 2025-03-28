@@ -2,6 +2,7 @@ import {asyncHandler} from "../utils/asynchandler.js";
 import { User } from "../models/userModel.js";
 import uploadImageOnCloudinary from '../utils/cloudinary.js';
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const generateAccessTokenRefereshToken = async(userId)=>{
     try{
@@ -339,6 +340,55 @@ const getChannelProfile=async(req,res)=>{
    }
 }
 
+const getWatchHistory = async (req, res) => {
+  try {
+    const history = await User.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(req.user._id),
+        },
+      },
+      {
+        $lookup: {
+          from: "videos",
+          localField: "_id",
+          foreignField: "watchHistory",
+          as: "watchHistory",
+          pipeline: [
+            {
+              $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+              },
+            },
+            {
+              $addFields: {
+                owner: { $first: "$owner" }, 
+              },
+            },
+            {
+              $project: {
+                owner: {
+                  fullName: 1,
+                  username: 1,
+                  avatar: 1,
+                },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+  console.log(history);
+    return res.status(200).json({ success: true, data: history });
+  } catch (error) {
+    console.error("Error fetching watch history:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
 
 
-export {registerUser,loginUser,logoutUser,verifyRefreshToken,changeCurrentPassword,getCurrentUser,updateAvatar,getChannelProfile}
+
+export {registerUser,loginUser,logoutUser,verifyRefreshToken,changeCurrentPassword,getCurrentUser,updateAvatar,getChannelProfile,getWatchHistory}
