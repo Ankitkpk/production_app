@@ -1,5 +1,85 @@
 import uploadImageOnCloudinary from '../utils/cloudinary.js';
 
+
+
+
+const getAllVideos = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      query = "",
+      sortBy = "createdAt",
+      sortType = "desc",
+      userId,
+    } = req.query;
+
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+
+    const videos = await Video.aggregate([
+      {
+        $match: {
+          $or: [
+            { title: { $regex: query, $options: "i" } },
+            { description: { $regex: query, $options: "i" } },
+          ],
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "createdBy",
+          pipeline: [
+            {
+              $project: {
+                fullname: 1,
+                username: 1,
+                avatar: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          createdBy: { $first: "$createdBy" },
+        },
+      },
+      {
+        $project: {
+          thumbnail: 1,
+          videoFile: 1,
+          title: 1,
+          description: 1,
+          createdBy: 1,
+        },
+      },
+      {
+        $sort: {
+          [sortBy]: sortType === "asc" ? 1 : -1,
+        },
+      },
+      { $skip: (pageNumber - 1) * limitNumber },
+      { $limit: limitNumber },
+    ]);
+
+    if (!videos.length) {
+      return res.status(404).json(new ApiResponse(404, [], "No videos found"));
+    }
+
+    return res.status(200).json(new ApiResponse(200, videos, "Videos fetched successfully"));
+  } catch (error) {
+    console.error("Error fetching videos:", error);
+    return res.status(500).json(new ApiError(500, "Internal Server Error"));
+  }
+};
+
+
+
+
 const publishedVideo = async (req, res) => {
     try {
       const { title, description, owner } = req.body;
