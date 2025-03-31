@@ -1,5 +1,5 @@
 import express from 'express';
-import {createVideo} from '../controllers/videoController.js';
+import {publishedVideo} from '../controllers/videoController.js';
 import {upload} from '../middlewares/multer.js'; 
 
 
